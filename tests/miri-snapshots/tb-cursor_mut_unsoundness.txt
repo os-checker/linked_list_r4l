@@ -1,0 +1,38 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/linked_list_r4l-94d0f7a2abdd751c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.09s
+
+     Running tests/cursor_mut.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2)
+
+running 1 test
+test cursor_mut_unsoundness ... error: Undefined Behavior: Data race detected between (1) retag read on thread `cursor_mut_unso` and (2) non-atomic write on thread `0` at alloc42393+0x10
+  --> tests/cursor_mut.rs:42:17
+   |
+42 |                 *buf = i.to_string();
+   |                 ^^^^ (2) just happened here
+   |
+help: and (1) occurred earlier here
+  --> tests/cursor_mut.rs:54:36
+   |
+54 |         println!("id={id} buf={}", data.inner());
+   |                                    ^^^^^^^^^^^^
+   = help: retags occur on all (re)borrows and as well as when references are copied or moved
+   = help: retags permit optimizations that insert speculative reads or writes
+   = help: therefore from the perspective of data races, a retag has the same implications as a read or write
+   = help: this indicates a bug in the program: it performed an invalid operation, and caused Undefined Behavior
+   = help: see https://doc.rust-lang.org/nightly/reference/behavior-considered-undefined.html for further information
+   = note: BACKTRACE (of the first span) on thread `0`:
+   = note: inside closure at tests/cursor_mut.rs:42:17: 42:21
+
+note: some details are omitted, run with `MIRIFLAGS=-Zmiri-backtrace=full` for a verbose backtrace
+
+error: aborting due to 1 previous error
+
+error: test failed, to rerun pass `--test cursor_mut`
+
+Caused by:
+  process didn't exit successfully: `/home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/bin/cargo-miri runner /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2 cursor_mut_unsoundness` (exit status: 1)
+note: test exited abnormally; to see the full output pass --no-capture to the harness.

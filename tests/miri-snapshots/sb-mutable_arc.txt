@@ -1,0 +1,52 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/linked_list_r4l-94d0f7a2abdd751c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.07s
+
+     Running tests/cursor_mut.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2)
+
+running 1 test
+test mutable_arc ... error: Undefined Behavior: trying to retag from <137391> for Unique permission at alloc42408[0x10], but that tag only grants SharedReadOnly permission for this location
+   --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:388:23
+    |
+388 |         Some(unsafe { &mut *cur.as_ptr() })
+    |                       ^^^^^^^^^^^^^^^^^^ this error occurs as part of retag at alloc42408[0x10..0x40]
+    |
+    = help: this indicates a potential bug in the program: it performed an invalid operation, but the Stacked Borrows rules it violated are still experimental
+    = help: see https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/stacked-borrows.md for further information
+help: <137391> was created by a SharedReadOnly retag at offsets [0x10..0x38]
+   --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:162:28
+    |
+162 |         let new_ptr = Some(NonNull::from(new));
+    |                            ^^^^^^^^^^^^^^^^^^
+    = note: BACKTRACE (of the first span) on thread `mutable_arc`:
+    = note: inside `linked_list_r4l::raw_list::CursorMut::<'_, std::sync::Arc<Node>>::current` at /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:388:23: 388:41
+note: inside `linked_list_r4l::linked_list::CursorMut::<'_, std::sync::Arc<Node>>::current`
+   --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/linked_list.rs:249:9
+    |
+249 |         self.cursor.current()
+    |         ^^^^^^^^^^^^^^^^^^^^^
+note: inside `mutable_arc`
+   --> tests/cursor_mut.rs:22:15
+    |
+ 22 |     let val = cursor.current().unwrap();
+    |               ^^^^^^^^^^^^^^^^
+note: inside closure
+   --> tests/cursor_mut.rs:9:17
+    |
+  8 | #[test]
+    | ------- in this attribute macro expansion
+  9 | fn mutable_arc() {
+    |                 ^
+
+note: some details are omitted, run with `MIRIFLAGS=-Zmiri-backtrace=full` for a verbose backtrace
+
+error: aborting due to 1 previous error
+
+error: test failed, to rerun pass `--test cursor_mut`
+
+Caused by:
+  process didn't exit successfully: `/home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/bin/cargo-miri runner /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2 mutable_arc` (exit status: 1)
+note: test exited abnormally; to see the full output pass --no-capture to the harness.

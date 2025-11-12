@@ -1,0 +1,51 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/linked_list_r4l-94d0f7a2abdd751c)
+
+running 2 tests
+test linked_list::tests::test_push_back ... error: Undefined Behavior: deallocation through <145021> at alloc43973[0x0] is forbidden
+    --> /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/boxed.rs:1686:17
+     |
+1686 |                 self.1.deallocate(From::from(ptr.cast()), layout);
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Undefined Behavior occurred here
+     |
+     = help: this indicates a potential bug in the program: it performed an invalid operation, but the Tree Borrows rules it violated are still experimental
+     = help: see https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/tree-borrows.md for further information
+     = help: the accessed tag <145021> is a child of the conflicting tag <140597>
+     = help: the conflicting tag <140597> has state Frozen which forbids this deallocation (acting as a child write access)
+help: the accessed tag <145021> was created here
+    --> src/linked_list.rs:233:15
+     |
+ 233 |         while self.pop_front().is_some() {}
+     |               ^^^^^^^^^^^^^^^^
+help: the conflicting tag <140597> was created here, in the initial state Cell
+    --> src/raw_list.rs:162:28
+     |
+ 162 |         let new_ptr = Some(NonNull::from(new));
+     |                            ^^^^^^^^^^^^^^^^^^
+     = note: BACKTRACE (of the first span) on thread `linked_list::te`:
+     = note: inside `<std::boxed::Box<linked_list::tests::Example> as std::ops::Drop>::drop` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/boxed.rs:1686:17: 1686:66
+     = note: inside `std::ptr::drop_in_place::<std::boxed::Box<linked_list::tests::Example>> - shim(Some(std::boxed::Box<linked_list::tests::Example>))` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:805:1: 807:25
+     = note: inside `std::ptr::drop_in_place::<std::option::Option<std::boxed::Box<linked_list::tests::Example>>> - shim(Some(std::option::Option<std::boxed::Box<linked_list::tests::Example>>))` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:805:1: 807:25
+note: inside `<linked_list::List<std::boxed::Box<linked_list::tests::Example>> as std::ops::Drop>::drop`
+    --> src/linked_list.rs:233:40
+     |
+ 233 |         while self.pop_front().is_some() {}
+     |                                        ^
+     = note: inside `std::ptr::drop_in_place::<linked_list::List<std::boxed::Box<linked_list::tests::Example>>> - shim(Some(linked_list::List<std::boxed::Box<linked_list::tests::Example>>))` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:805:1: 807:25
+note: inside closure
+    --> src/linked_list.rs:342:24
+     |
+ 341 |     #[test]
+     |     ------- in this attribute macro expansion
+ 342 |     fn test_push_back() {
+     |                        ^
+
+note: some details are omitted, run with `MIRIFLAGS=-Zmiri-backtrace=full` for a verbose backtrace
+
+error: aborting due to 1 previous error
+
+error: test failed, to rerun pass `--lib`
+
+Caused by:
+  process didn't exit successfully: `/home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/bin/cargo-miri runner /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/target/miri/aarch64-unknown-linux-gnu/debug/deps/linked_list_r4l-94d0f7a2abdd751c test_push_back` (exit status: 1)
+note: test exited abnormally; to see the full output pass --no-capture to the harness.
