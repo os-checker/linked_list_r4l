@@ -10,8 +10,6 @@ fn pop_front_unsoundness() {
     // Adjust this number from small to large, you'll see more panics.
     const N: usize = 1 << 7;
 
-    let data = Arc::new(Node::new(0));
-
     thread::scope(|s| {
         let mut v_thread = Vec::new();
         for id in 0..1 << 4 {
@@ -20,7 +18,7 @@ fn pop_front_unsoundness() {
                 .spawn_scoped(s, || {
                     let mut list = List::<Arc<Node>>::new();
                     for n in 0..N {
-                        list.push_back(data.clone());
+                        list.push_back(Arc::new(Node::new(0)));
                         list.pop_front().unwrap_or_else(|| {
                             panic!("[{n}] This shouldn't happen, because we just push a node.")
                         });
