@@ -99,7 +99,7 @@ impl<T: GetLinks + ?Sized> GetLinks for Box<T> {
     type EntryType = T::EntryType;
 
     #[inline]
-    fn get_links(data: &Self::EntryType) -> &Links<Self::EntryType> {
+    fn get_links(data: NonNull<Self::EntryType>) -> NonNull<Links<Self::EntryType>> {
         <T as GetLinks>::get_links(data)
     }
 }
@@ -115,7 +115,7 @@ impl<T: GetLinks + ?Sized> GetLinks for Arc<T> {
     type EntryType = T::EntryType;
 
     #[inline]
-    fn get_links(data: &Self::EntryType) -> &Links<Self::EntryType> {
+    fn get_links(data: NonNull<Self::EntryType>) -> NonNull<Links<Self::EntryType>> {
         <T as GetLinks>::get_links(data)
     }
 }
@@ -154,7 +154,7 @@ impl<G: GetLinksWrapped> List<G> {
         let ptr = data.into_pointer();
 
         // SAFETY: We took ownership of the entry, so it is safe to insert it.
-        if !unsafe { self.list.push_back(ptr.as_ref()) } {
+        if !unsafe { self.list.push_back(ptr) } {
             // If insertion failed, rebuild object so that it can be freed.
             // SAFETY: We just called `into_pointer` above.
             unsafe { G::Wrapped::from_pointer(ptr) };
@@ -169,7 +169,7 @@ impl<G: GetLinksWrapped> List<G> {
         let ptr = data.into_pointer();
 
         // SAFETY: We took ownership of the entry, so it is safe to insert it.
-        if !unsafe { self.list.push_front(ptr.as_ref()) } {
+        if !unsafe { self.list.push_front(ptr) } {
             // If insertion failed, rebuild object so that it can be freed.
             unsafe { G::Wrapped::from_pointer(ptr) };
         }
@@ -186,7 +186,7 @@ impl<G: GetLinksWrapped> List<G> {
     pub unsafe fn insert_after(&mut self, existing: &G::Wrapped, data: G::Wrapped) {
         let ptr = data.into_pointer();
         let entry = Wrapper::as_ref(existing);
-        if unsafe { !self.list.insert_after(entry, ptr.as_ref()) } {
+        if unsafe { !self.list.insert_after(entry.into(), ptr) } {
             // If insertion failed, rebuild object so that it can be freed.
             unsafe { G::Wrapped::from_pointer(ptr) };
         }
@@ -198,10 +198,10 @@ impl<G: GetLinksWrapped> List<G> {
     ///
     /// Callers must ensure that `data` is either on this list or in no list. It being on another
     /// list leads to memory unsafety.
-    pub unsafe fn remove(&mut self, data: &G::Wrapped) -> Option<G::Wrapped> {
-        let entry_ref = Wrapper::as_ref(data);
-        if unsafe { self.list.remove(entry_ref) } {
-            Some(unsafe { G::Wrapped::from_pointer(NonNull::from(entry_ref)) })
+    pub unsafe fn remove(&mut self, data: NonNull<G::Wrapped>) -> Option<G::Wrapped> {
+        let entry = Wrapper::as_ref(data.as_ref()).into();
+        if unsafe { self.list.remove(entry) } {
+            Some(unsafe { G::Wrapped::from_pointer(entry) })
         } else {
             None
         }
@@ -304,7 +304,7 @@ impl<G: GetLinksWrapped> iter::DoubleEndedIterator for Iterator<'_, G> {
 
 #[cfg(test)]
 mod tests {
-    use super::{GetLinks, Links, List};
+    use super::{GetLinks, Links, List, NonNull};
 
     struct Example {
         inner: usize,
@@ -313,8 +313,8 @@ mod tests {
 
     impl GetLinks for Example {
         type EntryType = Self;
-        fn get_links(obj: &Self) -> &Links<Self> {
-            &obj.links
+        fn get_links(data: NonNull<Self>) -> NonNull<Links<Self>> {
+            unsafe { NonNull::new(&raw mut (*data.as_ptr()).links).unwrap() }
         }
     }
 

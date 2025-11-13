@@ -25,7 +25,7 @@ pub trait GetLinks {
     type EntryType: ?Sized;
 
     /// Returns the links to be used when linking an entry within a list.
-    fn get_links(data: &Self::EntryType) -> &Links<Self::EntryType>;
+    fn get_links(data: NonNull<Self::EntryType>) -> NonNull<Links<Self::EntryType>>;
 }
 
 /// The links used to link an object on a linked list.
@@ -112,14 +112,14 @@ impl<G: GetLinks> RawList<G> {
 
     fn insert_after_priv(
         &mut self,
-        existing: &G::EntryType,
+        existing: NonNull<G::EntryType>,
         new_entry: &mut ListEntry<G::EntryType>,
         new_ptr: Option<NonNull<G::EntryType>>,
     ) {
         {
             // SAFETY: It's safe to get the previous entry of `existing` because the list cannot
             // change.
-            let existing_links = unsafe { &mut *G::get_links(existing).entry.get() };
+            let existing_links = unsafe { &mut *G::get_links(existing).as_ref().entry.get() };
             new_entry.next = existing_links.next;
             existing_links.next = new_ptr;
         }
@@ -128,7 +128,7 @@ impl<G: GetLinks> RawList<G> {
 
         // SAFETY: It's safe to get the next entry of `existing` because the list cannot change.
         let next_links =
-            unsafe { &mut *G::get_links(new_entry.next.unwrap().as_ref()).entry.get() };
+            unsafe { &mut *G::get_links(new_entry.next.unwrap()).as_ref().entry.get() };
         next_links.prev = new_ptr;
     }
 
@@ -137,33 +137,37 @@ impl<G: GetLinks> RawList<G> {
     /// # Safety
     ///
     /// Callers must ensure that `existing` points to a valid entry that is on the list.
-    pub unsafe fn insert_after(&mut self, existing: &G::EntryType, new: &G::EntryType) -> bool {
+    pub unsafe fn insert_after(
+        &mut self,
+        existing: NonNull<G::EntryType>,
+        new: NonNull<G::EntryType>,
+    ) -> bool {
         let links = G::get_links(new);
-        if !links.acquire_for_insertion() {
+        if !links.as_ref().acquire_for_insertion() {
             // Nothing to do if already inserted.
             return false;
         }
 
         // SAFETY: The links are now owned by the list, so it is safe to get a mutable reference.
-        let new_entry = unsafe { &mut *links.entry.get() };
+        let new_entry = unsafe { &mut *links.as_ref().entry.get() };
         self.insert_after_priv(existing, new_entry, Some(NonNull::from(new)));
         true
     }
 
-    fn push_back_internal(&mut self, new: &G::EntryType, front: bool) -> bool {
+    fn push_back_internal(&mut self, new: NonNull<G::EntryType>, front: bool) -> bool {
         let links = G::get_links(new);
-        if !links.acquire_for_insertion() {
+        if unsafe { !links.as_ref().acquire_for_insertion() } {
             // Nothing to do if already inserted.
             return false;
         }
 
         // SAFETY: The links are now owned by the list, so it is safe to get a mutable reference.
-        let new_entry = unsafe { &mut *links.entry.get() };
+        let new_entry = unsafe { &mut *links.as_ref().entry.get() };
         let new_ptr = Some(NonNull::from(new));
         match self.back() {
             // SAFETY: `back` is valid as the list cannot change.
             Some(back) => {
-                self.insert_after_priv(unsafe { back.as_ref() }, new_entry, new_ptr);
+                self.insert_after_priv(back, new_entry, new_ptr);
                 // if push front, update head
                 if front {
                     self.head = new_ptr;
@@ -183,7 +187,7 @@ impl<G: GetLinks> RawList<G> {
     /// Rawlist will save the reference as node ptr.
     /// The caller must ensure the validity of the reference while it is on
     /// the linked list.
-    pub unsafe fn push_back(&mut self, new: &G::EntryType) -> bool {
+    pub unsafe fn push_back(&mut self, new: NonNull<G::EntryType>) -> bool {
         self.push_back_internal(new, false)
     }
 
@@ -192,15 +196,15 @@ impl<G: GetLinks> RawList<G> {
     /// Rawlist will save the reference as node ptr.
     /// The caller must ensure the validity of the reference while it is on
     /// the linked list.
-    pub unsafe fn push_front(&mut self, new: &G::EntryType) -> bool {
+    pub unsafe fn push_front(&mut self, new: NonNull<G::EntryType>) -> bool {
         self.push_back_internal(new, true)
     }
 
-    fn remove_internal(&mut self, data: &G::EntryType) -> bool {
+    fn remove_internal(&mut self, data: NonNull<G::EntryType>) -> bool {
         let links = G::get_links(data);
 
         // SAFETY: The links are now owned by the list, so it is safe to get a mutable reference.
-        let entry = unsafe { &mut *links.entry.get() };
+        let entry = unsafe { &mut *links.as_ref().entry.get() };
         let next = if let Some(next) = entry.next {
             next
         } else {
@@ -208,29 +212,29 @@ impl<G: GetLinks> RawList<G> {
             return false;
         };
 
-        if ptr::eq(data, next.as_ptr()) {
+        if data == next {
             // We're removing the only element.
             self.head = None
         } else {
             // Update the head if we're removing it.
             if let Some(raw_head) = self.head {
-                if ptr::eq(data, raw_head.as_ptr()) {
+                if data == raw_head {
                     self.head = Some(next);
                 }
             }
 
             // SAFETY: It's safe to get the previous entry because the list cannot change.
-            unsafe { &mut *G::get_links(entry.prev.unwrap().as_ref()).entry.get() }.next =
+            unsafe { &mut *G::get_links(entry.prev.unwrap()).as_ref().entry.get() }.next =
                 entry.next;
 
             // SAFETY: It's safe to get the next entry because the list cannot change.
-            unsafe { &mut *G::get_links(next.as_ref()).entry.get() }.prev = entry.prev;
+            unsafe { &mut *G::get_links(next).as_ref().entry.get() }.prev = entry.prev;
         }
 
         // Reset the links of the element we're removing so that we know it's not on any list.
         entry.next = None;
         entry.prev = None;
-        links.release_after_removal();
+        unsafe { links.as_ref().release_after_removal() };
         true
     }
 
@@ -240,14 +244,14 @@ impl<G: GetLinks> RawList<G> {
     ///
     /// Callers must ensure that `data` is either on this list or in no list. It being on another
     /// list leads to memory unsafety.
-    pub unsafe fn remove(&mut self, data: &G::EntryType) -> bool {
+    pub unsafe fn remove(&mut self, data: NonNull<G::EntryType>) -> bool {
         self.remove_internal(data)
     }
 
     fn pop_front_internal(&mut self) -> Option<NonNull<G::EntryType>> {
         let head = self.head?;
         // SAFETY: The head is on the list as we just got it from there and it cannot change.
-        unsafe { self.remove(head.as_ref()) };
+        unsafe { self.remove(head) };
         Some(head)
     }
 
@@ -264,7 +268,7 @@ impl<G: GetLinks> RawList<G> {
     /// Just Get and not remove the last element of the list.
     pub(crate) fn back(&self) -> Option<NonNull<G::EntryType>> {
         // SAFETY: The links of head are owned by the list, so it is safe to get a reference.
-        unsafe { &*G::get_links(self.head?.as_ref()).entry.get() }.prev
+        unsafe { &*G::get_links(self.head?).as_ref().entry.get() }.prev
     }
 
     /// Returns a cursor starting on the first element of the list.
@@ -298,7 +302,7 @@ impl<G: GetLinks> CommonCursor<G> {
             Some(cur) => {
                 if let Some(head) = list.head {
                     // SAFETY: We have a shared ref to the linked list, so the links can't change.
-                    let links = unsafe { &*G::get_links(cur.as_ref()).entry.get() };
+                    let links = unsafe { &*G::get_links(cur).as_ref().entry.get() };
                     if !ptr::addr_eq(links.next.unwrap().as_ptr(), head.as_ptr()) {
                         self.cur = links.next;
                     }
@@ -321,7 +325,7 @@ impl<G: GetLinks> CommonCursor<G> {
                     }
                 };
                 // SAFETY: There's a shared ref to the list, so the links can't change.
-                let links = unsafe { &*G::get_links(next.as_ref()).entry.get() };
+                let links = unsafe { &*G::get_links(next).as_ref().entry.get() };
                 self.cur = links.prev;
             }
         }
@@ -394,7 +398,7 @@ impl<'a, G: GetLinks> CursorMut<'a, G> {
         let entry = self.cursor.cur?;
         self.cursor.move_next(self.list);
         // SAFETY: The entry is on the list as we just got it from there and it cannot change.
-        unsafe { self.list.remove(entry.as_ref()) };
+        unsafe { self.list.remove(entry) };
         Some(entry)
     }
 
@@ -466,7 +470,9 @@ impl<G: GetLinks> iter::DoubleEndedIterator for Iterator<'_, G> {
 #[cfg(test)]
 mod tests {
     extern crate alloc;
+
     use alloc::{boxed::Box, vec::Vec};
+    use core::ptr::NonNull;
 
     struct Example {
         links: super::Links<Self>,
@@ -475,8 +481,8 @@ mod tests {
     // SAFETY: This is the only adapter that uses `Example::links`.
     impl super::GetLinks for Example {
         type EntryType = Self;
-        fn get_links(obj: &Self) -> &super::Links<Self> {
-            &obj.links
+        fn get_links(obj: NonNull<Self>) -> NonNull<super::Links<Self>> {
+            NonNull::new(unsafe { &raw mut (*obj.as_ptr()).links }).unwrap()
         }
     }
 
@@ -527,10 +533,10 @@ mod tests {
                 let mut list = super::RawList::<Example>::new();
 
                 // Build list.
-                for j in 0..n {
+                for pos in 0..n {
                     // SAFETY: The entry was allocated above, it's not in any lists yet, is never
                     // moved, and outlives the list.
-                    unsafe { list.push_back(&v[j]) };
+                    unsafe { list.push_back(example(v.as_mut_ptr(), pos)) };
                 }
 
                 // Call the test case.
@@ -545,28 +551,34 @@ mod tests {
     #[test]
     fn test_push_back() {
         const MAX: usize = 10;
-        let v = build_vector(MAX);
+        let mut v = build_vector(MAX);
+        let v_ptr = v.as_mut_ptr();
         let mut list = super::RawList::<Example>::new();
 
         for n in 1..=MAX {
             // SAFETY: The entry was allocated above, it's not in any lists yet, is never moved,
             // and outlives the list.
-            unsafe { list.push_back(&v[n - 1]) };
+            unsafe { list.push_back(example(v_ptr, n - 1)) };
             assert_list_contents(&v[..n], &list);
         }
+    }
+
+    fn example(v_ptr: *mut Box<Example>, count: usize) -> NonNull<Example> {
+        unsafe { NonNull::new(&raw mut (**v_ptr.add(count))).unwrap() }
     }
 
     #[test]
     fn test_push_front() {
         const MAX: usize = 10;
-        let v = build_vector(MAX);
+        let mut v = build_vector(MAX);
+        let v_ptr = v.as_mut_ptr();
         let mut list = super::RawList::<Example>::new();
 
         for n in 1..=MAX {
             // SAFETY: The entry was allocated above, it's not in any lists yet, is never moved,
             // and outlives the list.
             println!("push front: {}", MAX - n);
-            unsafe { list.push_front(&v[MAX - n]) };
+            unsafe { list.push_front(example(v_ptr, MAX - n)) };
             assert_list_contents(&v[MAX - n..MAX], &list);
         }
     }
@@ -576,19 +588,24 @@ mod tests {
         test_each_element(1, 10, |v, list, i, _| {
             // Remove the i-th element.
             // SAFETY: The i-th element was added to the list above, and wasn't removed yet.
-            unsafe { list.remove(&v[i]) };
+            unsafe { list.remove(example(v.as_mut_ptr(), i)) };
             v.remove(i);
         });
     }
 
     #[test]
     fn test_one_insert_after() {
-        test_each_element(1, 10, |v, list, i, extra| {
+        test_each_element(1, 10, |v, list, i, mut extra| {
             // Insert after the i-th element.
             // SAFETY: The i-th element was added to the list above, and wasn't removed yet.
             // Additionally, the new element isn't in any list yet, isn't moved, and outlives
             // the list.
-            unsafe { list.insert_after(&*v[i], &*extra) };
+            unsafe {
+                list.insert_after(
+                    example(v.as_mut_ptr(), i),
+                    NonNull::new(&raw mut *extra).unwrap(),
+                )
+            };
             v.insert(i + 1, extra);
         });
     }
