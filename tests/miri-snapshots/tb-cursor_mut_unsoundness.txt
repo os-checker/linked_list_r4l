@@ -15,10 +15,10 @@ test cursor_mut_unsoundness ... error: Undefined Behavior: Data race detected be
    |                 ^^^^ (2) just happened here
    |
 help: and (1) occurred earlier here
-  --> tests/cursor_mut.rs:54:36
+  --> tests/cursor_mut.rs:54:9
    |
 54 |         println!("id={id} buf={}", data.inner());
-   |                                    ^^^^^^^^^^^^
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: retags occur on all (re)borrows and as well as when references are copied or moved
    = help: retags permit optimizations that insert speculative reads or writes
    = help: therefore from the perspective of data races, a retag has the same implications as a read or write
@@ -26,6 +26,7 @@ help: and (1) occurred earlier here
    = help: see https://doc.rust-lang.org/nightly/reference/behavior-considered-undefined.html for further information
    = note: BACKTRACE (of the first span) on thread `0`:
    = note: inside closure at tests/cursor_mut.rs:42:17: 42:21
+   = note: this error originates in the macro `println` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 note: some details are omitted, run with `MIRIFLAGS=-Zmiri-backtrace=full` for a verbose backtrace
 

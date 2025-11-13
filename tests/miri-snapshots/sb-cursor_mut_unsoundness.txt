@@ -8,21 +8,24 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; fini
      Running tests/cursor_mut.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2)
 
 running 1 test
-test cursor_mut_unsoundness ... error: Undefined Behavior: trying to retag from <141872> for Unique permission at alloc42393[0x10], but that tag only grants SharedReadOnly permission for this location
-   --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:388:23
+test cursor_mut_unsoundness ... error: Undefined Behavior: Data race detected between (1) retag read on thread `cursor_mut_unso` and (2) retag write of type `Node` on thread `0` at alloc42393+0x10
+   --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:392:23
     |
-388 |         Some(unsafe { &mut *cur.as_ptr() })
-    |                       ^^^^^^^^^^^^^^^^^^ this error occurs as part of retag at alloc42393[0x10..0x40]
+392 |         Some(unsafe { &mut *cur.as_ptr() })
+    |                       ^^^^^^^^^^^^^^^^^^ (2) just happened here
     |
-    = help: this indicates a potential bug in the program: it performed an invalid operation, but the Stacked Borrows rules it violated are still experimental
-    = help: see https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/stacked-borrows.md for further information
-help: <141872> was created by a SharedReadOnly retag at offsets [0x10..0x38]
-   --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:162:28
+help: and (1) occurred earlier here
+   --> tests/cursor_mut.rs:54:36
     |
-162 |         let new_ptr = Some(NonNull::from(new));
-    |                            ^^^^^^^^^^^^^^^^^^
+ 54 |         println!("id={id} buf={}", data.inner());
+    |                                    ^^^^^^^^^^^^
+    = help: retags occur on all (re)borrows and as well as when references are copied or moved
+    = help: retags permit optimizations that insert speculative reads or writes
+    = help: therefore from the perspective of data races, a retag has the same implications as a read or write
+    = help: this indicates a bug in the program: it performed an invalid operation, and caused Undefined Behavior
+    = help: see https://doc.rust-lang.org/nightly/reference/behavior-considered-undefined.html for further information
     = note: BACKTRACE (of the first span) on thread `0`:
-    = note: inside `linked_list_r4l::raw_list::CursorMut::<'_, std::sync::Arc<Node>>::current` at /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:388:23: 388:41
+    = note: inside `linked_list_r4l::raw_list::CursorMut::<'_, std::sync::Arc<Node>>::current` at /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:392:23: 392:41
 note: inside `linked_list_r4l::linked_list::CursorMut::<'_, std::sync::Arc<Node>>::current`
    --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/linked_list.rs:249:9
     |

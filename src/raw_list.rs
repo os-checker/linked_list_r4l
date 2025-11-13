@@ -212,13 +212,13 @@ impl<G: GetLinks> RawList<G> {
             return false;
         };
 
-        if data == next {
+        if ptr::eq(data.as_ptr(), next.as_ptr()) {
             // We're removing the only element.
             self.head = None
         } else {
             // Update the head if we're removing it.
             if let Some(raw_head) = self.head {
-                if data == raw_head {
+                if ptr::eq(data.as_ptr(), raw_head.as_ptr()) {
                     self.head = Some(next);
                 }
             }
