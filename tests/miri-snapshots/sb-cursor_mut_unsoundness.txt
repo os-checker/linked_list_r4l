@@ -27,9 +27,9 @@ help: and (1) occurred earlier here
     = note: BACKTRACE (of the first span) on thread `0`:
     = note: inside `linked_list_r4l::raw_list::CursorMut::<'_, std::sync::Arc<Node>>::current` at /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:392:23: 392:41
 note: inside `linked_list_r4l::linked_list::CursorMut::<'_, std::sync::Arc<Node>>::current`
-   --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/linked_list.rs:249:9
+   --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/linked_list.rs:268:9
     |
-249 |         self.cursor.current()
+268 |         self.cursor.current()
     |         ^^^^^^^^^^^^^^^^^^^^^
 note: inside closure
    --> tests/cursor_mut.rs:70:28
