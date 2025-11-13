@@ -68,8 +68,8 @@ macro_rules! __def_node_internal {
             type EntryType = Self;
 
             #[inline]
-            fn get_links(t: &Self) -> &$crate::Links<Self> {
-                &t.links
+            fn get_links(t: NonNull<Self>) -> NonNull<$crate::Links<Self>> {
+                unsafe { NonNull::new(&raw mut (*t.as_ptr()).links).unwrap() }
             }
         }
 
