@@ -27,7 +27,14 @@ pub trait Wrapper<T: ?Sized> {
     unsafe fn from_pointer(ptr: NonNull<T>) -> Self;
 
     /// Returns a reference to the wrapped object.
+    #[allow(dead_code)]
     fn as_ref(&self) -> &T;
+
+    /// Returns the data pointer.
+    /// NOTE: `NonNull<T>` acts more like a `*mut T`, but here we derive it
+    /// from a shared reference, meaning there will be UB if using the returned
+    /// pointer to write.
+    fn as_ptr(&self) -> NonNull<T>;
 }
 
 impl<T: ?Sized> Wrapper<T> for Box<T> {
@@ -44,6 +51,10 @@ impl<T: ?Sized> Wrapper<T> for Box<T> {
     #[inline]
     fn as_ref(&self) -> &T {
         AsRef::as_ref(self)
+    }
+
+    fn as_ptr(&self) -> NonNull<T> {
+        NonNull::new(&raw const **self as _).unwrap()
     }
 }
 
@@ -63,6 +74,10 @@ impl<T: ?Sized> Wrapper<T> for Arc<T> {
     fn as_ref(&self) -> &T {
         AsRef::as_ref(self)
     }
+
+    fn as_ptr(&self) -> NonNull<T> {
+        NonNull::new(Arc::as_ptr(self) as *mut T).unwrap()
+    }
 }
 
 impl<T: ?Sized> Wrapper<T> for &T {
@@ -79,6 +94,10 @@ impl<T: ?Sized> Wrapper<T> for &T {
     #[inline]
     fn as_ref(&self) -> &T {
         self
+    }
+
+    fn as_ptr(&self) -> NonNull<T> {
+        NonNull::from(*self)
     }
 }
 
@@ -185,8 +204,8 @@ impl<G: GetLinksWrapped> List<G> {
     /// Callers must ensure that `existing` points to a valid entry that is on the list.
     pub unsafe fn insert_after(&mut self, existing: &G::Wrapped, data: G::Wrapped) {
         let ptr = data.into_pointer();
-        let entry = Wrapper::as_ref(existing);
-        if unsafe { !self.list.insert_after(entry.into(), ptr) } {
+        let entry = Wrapper::as_ptr(existing);
+        if unsafe { !self.list.insert_after(entry, ptr) } {
             // If insertion failed, rebuild object so that it can be freed.
             unsafe { G::Wrapped::from_pointer(ptr) };
         }
@@ -199,7 +218,7 @@ impl<G: GetLinksWrapped> List<G> {
     /// Callers must ensure that `data` is either on this list or in no list. It being on another
     /// list leads to memory unsafety.
     pub unsafe fn remove(&mut self, data: NonNull<G::Wrapped>) -> Option<G::Wrapped> {
-        let entry = Wrapper::as_ref(data.as_ref()).into();
+        let entry = Wrapper::as_ptr(data.as_ref());
         if unsafe { self.list.remove(entry) } {
             Some(unsafe { G::Wrapped::from_pointer(entry) })
         } else {

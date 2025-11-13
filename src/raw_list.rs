@@ -163,7 +163,7 @@ impl<G: GetLinks> RawList<G> {
 
         // SAFETY: The links are now owned by the list, so it is safe to get a mutable reference.
         let new_entry = unsafe { &mut *links.as_ref().entry.get() };
-        let new_ptr = Some(NonNull::from(new));
+        let new_ptr = Some(new);
         match self.back() {
             // SAFETY: `back` is valid as the list cannot change.
             Some(back) => {
