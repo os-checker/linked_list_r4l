@@ -1,0 +1,64 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/lib.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/linked_list_r4l-94d0f7a2abdd751c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.07s
+
+     Running tests/cursor_mut.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2)
+
+running 1 test
+test arc_data_race ... error: Undefined Behavior: Data race detected between (1) non-atomic write on thread `0` and (2) retag read of type `alloc::sync::ArcInner<std::string::String>` on thread `arc_data_race` at alloc42653+0x10
+   --> /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/non_null.rs:444:18
+    |
+444 |         unsafe { &*self.as_ptr().cast_const() }
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (2) just happened here
+    |
+help: and (1) occurred earlier here
+   --> tests/cursor_mut.rs:39:26
+    |
+ 39 |                 unsafe { *ptr = i.to_string() };
+    |                          ^^^^
+    = help: retags occur on all (re)borrows and as well as when references are copied or moved
+    = help: retags permit optimizations that insert speculative reads or writes
+    = help: therefore from the perspective of data races, a retag has the same implications as a read or write
+    = help: this indicates a bug in the program: it performed an invalid operation, and caused Undefined Behavior
+    = help: see https://doc.rust-lang.org/nightly/reference/behavior-considered-undefined.html for further information
+    = note: BACKTRACE (of the first span) on thread `arc_data_race`:
+    = note: inside `std::ptr::NonNull::<alloc::sync::ArcInner<std::string::String>>::as_ref::<'_>` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/non_null.rs:444:18: 444:46
+    = note: inside `std::sync::Arc::<std::string::String>::inner` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/sync.rs:1917:18: 1917:35
+    = note: inside `<std::sync::Arc<std::string::String> as std::ops::Deref>::deref` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/sync.rs:2232:10: 2232:22
+    = note: inside `<std::sync::Arc<std::string::String> as std::fmt::Display>::fmt` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/sync.rs:3517:28: 3517:34
+    = note: inside `core::fmt::rt::Argument::<'_>::fmt` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/fmt/rt.rs:173:76: 173:95
+    = note: inside `std::fmt::write` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/fmt/mod.rs:1469:21: 1469:44
+    = note: inside `std::io::default_write_fmt::<std::vec::Vec<u8>>` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/io/mod.rs:639:11: 639:40
+    = note: inside `<std::vec::Vec<u8> as std::io::Write>::write_fmt` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/io/mod.rs:1954:13: 1954:42
+    = note: inside closure at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/io/stdio.rs:1176:25: 1176:84
+    = note: inside `std::option::Option::<std::sync::Arc<std::sync::Mutex<std::vec::Vec<u8>>>>::map::<(), {closure@std::io::stdio::print_to_buffer_if_capture_used::{closure#0}::{closure#0}}>` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:1164:29: 1164:33
+    = note: inside closure at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/io/stdio.rs:1175:13: 1178:15
+    = note: inside `std::thread::LocalKey::<std::cell::Cell<std::option::Option<std::sync::Arc<std::sync::Mutex<std::vec::Vec<u8>>>>>>::try_with::<{closure@std::io::stdio::print_to_buffer_if_capture_used::{closure#0}}, std::option::Option<()>>` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/thread/local.rs:508:12: 508:27
+    = note: inside `std::io::stdio::print_to_buffer_if_capture_used` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/io/stdio.rs:1171:12: 1179:11
+    = note: inside `std::io::stdio::print_to::<std::io::Stdout>` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/io/stdio.rs:1159:8: 1159:45
+    = note: inside `std::io::_print` at /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/io/stdio.rs:1275:5: 1275:37
+note: inside `arc_data_race`
+   --> tests/cursor_mut.rs:51:9
+    |
+ 51 |         println!("id={id} buf={data}");
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: inside closure
+   --> tests/cursor_mut.rs:30:19
+    |
+ 29 | #[test]
+    | ------- in this attribute macro expansion
+ 30 | fn arc_data_race() {
+    |                   ^
+
+note: some details are omitted, run with `MIRIFLAGS=-Zmiri-backtrace=full` for a verbose backtrace
+
+error: aborting due to 1 previous error
+
+error: test failed, to rerun pass `--test cursor_mut`
+
+Caused by:
+  process didn't exit successfully: `/home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/bin/cargo-miri runner /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2 arc_data_race` (exit status: 1)
+note: test exited abnormally; to see the full output pass --no-capture to the harness.

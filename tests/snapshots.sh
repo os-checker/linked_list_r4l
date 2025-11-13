@@ -7,7 +7,7 @@ miri() {
   MIRIFLAGS=-Zmiri-tree-borrows cargo miri test "$1" 2>&1 | tee tests/miri-snapshots/tb-"$1".txt
 }
 
-testcases=("pop_front_unsoundness" "cursor_mut_unsoundness" "mutable_arc" "test_push_back")
+testcases=("pop_front_unsoundness" "cursor_mut_unsoundness" "mutable_arc" "test_push_back" "arc_data_race")
 
 for testcase in "${testcases[@]}"; do
   miri "$testcase"

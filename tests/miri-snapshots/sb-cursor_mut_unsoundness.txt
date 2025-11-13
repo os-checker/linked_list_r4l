@@ -8,16 +8,16 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; fini
      Running tests/cursor_mut.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2)
 
 running 1 test
-test cursor_mut_unsoundness ... error: Undefined Behavior: Data race detected between (1) retag read on thread `cursor_mut_unso` and (2) retag write of type `Node` on thread `0` at alloc42393+0x10
+test cursor_mut_unsoundness ... error: Undefined Behavior: Data race detected between (1) retag read on thread `cursor_mut_unso` and (2) retag write of type `Node` on thread `0` at alloc42356+0x10
    --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:392:23
     |
 392 |         Some(unsafe { &mut *cur.as_ptr() })
     |                       ^^^^^^^^^^^^^^^^^^ (2) just happened here
     |
 help: and (1) occurred earlier here
-   --> tests/cursor_mut.rs:54:36
+   --> tests/cursor_mut.rs:84:36
     |
- 54 |         println!("id={id} buf={}", data.inner());
+ 84 |         println!("id={id} buf={}", data.inner());
     |                                    ^^^^^^^^^^^^
     = help: retags occur on all (re)borrows and as well as when references are copied or moved
     = help: retags permit optimizations that insert speculative reads or writes
@@ -32,9 +32,9 @@ note: inside `linked_list_r4l::linked_list::CursorMut::<'_, std::sync::Arc<Node>
 249 |         self.cursor.current()
     |         ^^^^^^^^^^^^^^^^^^^^^
 note: inside closure
-   --> tests/cursor_mut.rs:40:28
+   --> tests/cursor_mut.rs:70:28
     |
- 40 |             let buf = &mut cursor.current().expect("No current corsor").inner;
+ 70 |             let buf = &mut cursor.current().expect("No current corsor").inner;
     |                            ^^^^^^^^^^^^^^^^
 
 note: some details are omitted, run with `MIRIFLAGS=-Zmiri-backtrace=full` for a verbose backtrace

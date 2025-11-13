@@ -27,6 +27,36 @@ fn mutable_arc() {
 }
 
 #[test]
+fn arc_data_race() {
+    let data = Arc::new(String::new());
+
+    let task = |id: usize| {
+        let data = data.clone();
+        const N: usize = 100;
+        let f = move || {
+            let ptr = Arc::into_raw(data) as *mut _;
+            for i in N * id..N * (id + 1) {
+                unsafe { *ptr = i.to_string() };
+            }
+        };
+        thread::Builder::new()
+            .name(id.to_string())
+            .spawn(f)
+            .unwrap()
+    };
+
+    let mut tasks = Vec::new();
+    for id in 0..10 {
+        tasks.push(task(id));
+        println!("id={id} buf={data}");
+    }
+
+    for t in tasks {
+        t.join().unwrap();
+    }
+}
+
+#[test]
 fn cursor_mut_unsoundness() {
     let data = Arc::new(Node::new(String::new()));
 
