@@ -1,79 +1,42 @@
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
      Running unittests src/lib.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/linked_list_r4l-94d0f7a2abdd751c)
 
-running 0 tests
-
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.09s
-
-     Running tests/cursor_mut.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2)
-
-running 0 tests
-
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.05s
-
-     Running tests/pop_front.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/pop_front-15e0f5c2e31de242)
-
 running 1 test
-test pop_front_unsoundness ... FAILED
+test linked_list::ub::pop_front_unsoundness ... error: Undefined Behavior: write access through <143287> at alloc44578[0x18] is forbidden
+   --> src/linked_list.rs:372:13
+    |
+372 |             (*ptr.as_ptr()).inner.0 = 2;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Undefined Behavior occurred here
+    |
+    = help: this indicates a potential bug in the program: it performed an invalid operation, but the Tree Borrows rules it violated are still experimental
+    = help: see https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/tree-borrows.md for further information
+    = help: the accessed tag <143287> has state Frozen which forbids this child write access
+help: the accessed tag <143287> was created here, in the initial state Cell
+   --> src/raw_list.rs:162:28
+    |
+162 |         let new_ptr = Some(NonNull::from(new));
+    |                            ^^^^^^^^^^^^^^^^^^
+    = note: BACKTRACE (of the first span) on thread `linked_list::ub`:
+    = note: inside `linked_list::ub::show_ub` at src/linked_list.rs:372:13: 372:40
+note: inside `linked_list::ub::pop_front_unsoundness`
+   --> src/linked_list.rs:386:19
+    |
+386 |         let val = show_ub(&cur.inner, ptr);
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+note: inside closure
+   --> src/linked_list.rs:378:31
+    |
+377 |     #[test]
+    |     ------- in this attribute macro expansion
+378 |     fn pop_front_unsoundness() {
+    |                               ^
 
-failures:
+note: some details are omitted, run with `MIRIFLAGS=-Zmiri-backtrace=full` for a verbose backtrace
 
----- pop_front_unsoundness stdout ----
+error: aborting due to 1 previous error
 
-thread '1' (1003) panicked at tests/pop_front.rs:25:29:
-[0] This shouldn't happen, because we just push a node.
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-note: in Miri, you may have to set `MIRIFLAGS=-Zmiri-env-forward=RUST_BACKTRACE` for the environment variable to have an effect
+error: test failed, to rerun pass `--lib`
 
-thread '2' (1004) panicked at tests/pop_front.rs:25:29:
-[12] This shouldn't happen, because we just push a node.
-
-thread '0' (1002) panicked at tests/pop_front.rs:25:29:
-[16] This shouldn't happen, because we just push a node.
-
-thread '3' (1005) panicked at tests/pop_front.rs:25:29:
-[23] This shouldn't happen, because we just push a node.
-
-thread '5' (1007) panicked at tests/pop_front.rs:25:29:
-[4] This shouldn't happen, because we just push a node.
-
-thread '6' (1008) panicked at tests/pop_front.rs:25:29:
-[0] This shouldn't happen, because we just push a node.
-
-thread '4' (1006) panicked at tests/pop_front.rs:25:29:
-[32] This shouldn't happen, because we just push a node.
-
-thread '7' (1009) panicked at tests/pop_front.rs:25:29:
-[16] This shouldn't happen, because we just push a node.
-
-thread '9' (1011) panicked at tests/pop_front.rs:25:29:
-[1] This shouldn't happen, because we just push a node.
-
-thread '10' (1012) panicked at tests/pop_front.rs:25:29:
-[3] This shouldn't happen, because we just push a node.
-
-thread '8' (1010) panicked at tests/pop_front.rs:25:29:
-[24] This shouldn't happen, because we just push a node.
-
-thread '11' (1013) panicked at tests/pop_front.rs:25:29:
-[10] This shouldn't happen, because we just push a node.
-
-thread '13' (1015) panicked at tests/pop_front.rs:25:29:
-[1] This shouldn't happen, because we just push a node.
-
-thread '12' (1014) panicked at tests/pop_front.rs:25:29:
-[17] This shouldn't happen, because we just push a node.
-
-thread '14' (1016) panicked at tests/pop_front.rs:25:29:
-[19] This shouldn't happen, because we just push a node.
-
-thread 'pop_front_unsoundness' (1001) panicked at tests/pop_front.rs:15:5:
-a scoped thread panicked
-
-
-failures:
-    pop_front_unsoundness
-
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.92s
-
-error: test failed, to rerun pass `--test pop_front`
+Caused by:
+  process didn't exit successfully: `/home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/bin/cargo-miri runner /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/target/miri/aarch64-unknown-linux-gnu/debug/deps/linked_list_r4l-94d0f7a2abdd751c pop_front_unsoundness` (exit status: 1)
+note: test exited abnormally; to see the full output pass --no-capture to the harness.

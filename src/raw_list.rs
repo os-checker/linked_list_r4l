@@ -350,6 +350,11 @@ impl<'a, G: GetLinks> Cursor<'a, G> {
         }
     }
 
+    #[allow(dead_code)]
+    pub(crate) fn current_ptr(&self) -> Option<NonNull<G::EntryType>> {
+        self.cursor.cur
+    }
+
     /// Returns the element the cursor is currently positioned on.
     pub(crate) fn current(&self) -> Option<&'a G::EntryType> {
         let cur = self.cursor.cur?;
