@@ -2,15 +2,15 @@
      Running unittests src/lib.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/linked_list_r4l-94d0f7a2abdd751c)
 
 running 2 tests
-test linked_list::tests::test_push_back ... error: Undefined Behavior: trying to retag from <145055> for Unique permission at alloc44276[0x0], but that tag only grants SharedReadOnly permission for this location
+test linked_list::tests::test_push_back ... error: Undefined Behavior: trying to retag from <143778> for Unique permission at alloc43973[0x0], but that tag only grants SharedReadOnly permission for this location
     --> /home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/boxed.rs:1292:9
      |
 1292 |         Box(unsafe { Unique::new_unchecked(raw) }, alloc)
-     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this error occurs as part of retag at alloc44276[0x0..0x20]
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this error occurs as part of retag at alloc43973[0x0..0x20]
      |
      = help: this indicates a potential bug in the program: it performed an invalid operation, but the Stacked Borrows rules it violated are still experimental
      = help: see https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/stacked-borrows.md for further information
-help: <145055> was created by a SharedReadOnly retag at offsets [0x0..0x8]
+help: <143778> was created by a SharedReadOnly retag at offsets [0x0..0x8]
     --> src/raw_list.rs:162:28
      |
  162 |         let new_ptr = Some(NonNull::from(new));

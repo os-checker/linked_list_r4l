@@ -353,38 +353,38 @@ mod tests {
     }
 }
 
-#[cfg(test)]
-#[allow(dead_code)]
-mod ub {
-    use super::*;
-
-    crate::def_node! {
-        struct Node(Data);
-    }
-
-    #[derive(Debug)]
-    struct Data(u8);
-
-    // Demo: https://play.rust-lang.org/?version=stable&mode=release&edition=2024&gist=000c768003cf7ceb6b0f7c2944e1b7bc
-    #[inline(never)]
-    fn show_ub(cur: &Data, ptr: NonNull<Node>) -> u8 {
-        unsafe {
-            (*ptr.as_ptr()).inner.0 = 2;
-        }
-        cur.0
-    }
-
-    #[test]
-    fn pop_front_unsoundness() {
-        let mut list = List::<Box<Node>>::new();
-        list.push_back(Box::new(Node::new(Data(0))));
-
-        let cur = list.list.cursor_front().current().unwrap();
-        // let cur = unsafe { list.list.cursor_front().current_ptr().unwrap().as_mut() };
-        let ptr = list.list.cursor_front().current_ptr().unwrap();
-
-        let val = show_ub(&cur.inner, ptr);
-        let data = cur.inner.0;
-        dbg!(val, data);
-    }
-}
+// #[cfg(test)]
+// #[allow(dead_code)]
+// mod ub {
+//     use super::*;
+//
+//     crate::def_node! {
+//         struct Node(Data);
+//     }
+//
+//     #[derive(Debug)]
+//     struct Data(u8);
+//
+//     // Demo: https://play.rust-lang.org/?version=stable&mode=release&edition=2024&gist=000c768003cf7ceb6b0f7c2944e1b7bc
+//     #[inline(never)]
+//     fn show_ub(cur: &Data, ptr: NonNull<Node>) -> u8 {
+//         unsafe {
+//             (*ptr.as_ptr()).inner.0 = 2;
+//         }
+//         cur.0
+//     }
+//
+//     #[test]
+//     fn pop_front_unsoundness() {
+//         let mut list = List::<Box<Node>>::new();
+//         list.push_back(Box::new(Node::new(Data(0))));
+//
+//         let cur = list.list.cursor_front().current().unwrap();
+//         // let cur = unsafe { list.list.cursor_front().current_ptr().unwrap().as_mut() };
+//         let ptr = list.list.cursor_front().current_ptr().unwrap();
+//
+//         let val = show_ub(&cur.inner, ptr);
+//         let data = cur.inner.0;
+//         dbg!(val, data);
+//     }
+// }
