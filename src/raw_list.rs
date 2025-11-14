@@ -26,6 +26,14 @@ pub trait GetLinks {
 
     /// Returns the links to be used when linking an entry within a list.
     fn get_links(data: NonNull<Self::EntryType>) -> NonNull<Links<Self::EntryType>>;
+
+    // Projection from EntryType to ListEntry. This is actually private, since ListEntry is only
+    // public in this crate, while the trait is public beyond the crate.
+    #[doc(hidden)]
+    fn get_links_entry(data: NonNull<Self::EntryType>) -> NonNull<ListEntry<Self::EntryType>> {
+        // Safety: the NonNull ptr must be valid to access.
+        unsafe { NonNull::new((*Self::get_links(data).as_ptr()).entry.get()).unwrap() }
+    }
 }
 
 /// The links used to link an object on a linked list.
@@ -71,7 +79,7 @@ impl<T: ?Sized> Default for Links<T> {
     }
 }
 
-struct ListEntry<T: ?Sized> {
+pub struct ListEntry<T: ?Sized> {
     next: Option<NonNull<T>>,
     prev: Option<NonNull<T>>,
 }
@@ -119,16 +127,15 @@ impl<G: GetLinks> RawList<G> {
         {
             // SAFETY: It's safe to get the previous entry of `existing` because the list cannot
             // change.
-            let existing_links = unsafe { &mut *G::get_links(existing).as_ref().entry.get() };
+            let existing_links = unsafe { G::get_links_entry(existing).as_mut() };
             new_entry.next = existing_links.next;
             existing_links.next = new_ptr;
         }
 
-        new_entry.prev = Some(NonNull::from(existing));
+        new_entry.prev = Some(existing);
 
         // SAFETY: It's safe to get the next entry of `existing` because the list cannot change.
-        let next_links =
-            unsafe { &mut *G::get_links(new_entry.next.unwrap()).as_ref().entry.get() };
+        let next_links = unsafe { G::get_links_entry(new_entry.next.unwrap()).as_mut() };
         next_links.prev = new_ptr;
     }
 
@@ -149,8 +156,8 @@ impl<G: GetLinks> RawList<G> {
         }
 
         // SAFETY: The links are now owned by the list, so it is safe to get a mutable reference.
-        let new_entry = unsafe { &mut *links.as_ref().entry.get() };
-        self.insert_after_priv(existing, new_entry, Some(NonNull::from(new)));
+        let new_entry = unsafe { (*links.as_ptr()).entry.get_mut() };
+        self.insert_after_priv(existing, new_entry, Some(new));
         true
     }
 
@@ -162,7 +169,7 @@ impl<G: GetLinks> RawList<G> {
         }
 
         // SAFETY: The links are now owned by the list, so it is safe to get a mutable reference.
-        let new_entry = unsafe { &mut *links.as_ref().entry.get() };
+        let new_entry = unsafe { (*links.as_ptr()).entry.get_mut() };
         let new_ptr = Some(new);
         match self.back() {
             // SAFETY: `back` is valid as the list cannot change.
@@ -204,7 +211,7 @@ impl<G: GetLinks> RawList<G> {
         let links = G::get_links(data);
 
         // SAFETY: The links are now owned by the list, so it is safe to get a mutable reference.
-        let entry = unsafe { &mut *links.as_ref().entry.get() };
+        let entry = unsafe { (*links.as_ptr()).entry.get_mut() };
         let next = if let Some(next) = entry.next {
             next
         } else {
@@ -224,11 +231,10 @@ impl<G: GetLinks> RawList<G> {
             }
 
             // SAFETY: It's safe to get the previous entry because the list cannot change.
-            unsafe { &mut *G::get_links(entry.prev.unwrap()).as_ref().entry.get() }.next =
-                entry.next;
+            unsafe { G::get_links_entry(entry.prev.unwrap()).as_mut() }.next = entry.next;
 
             // SAFETY: It's safe to get the next entry because the list cannot change.
-            unsafe { &mut *G::get_links(next).as_ref().entry.get() }.prev = entry.prev;
+            unsafe { G::get_links_entry(next).as_mut() }.prev = entry.prev;
         }
 
         // Reset the links of the element we're removing so that we know it's not on any list.
@@ -268,7 +274,7 @@ impl<G: GetLinks> RawList<G> {
     /// Just Get and not remove the last element of the list.
     pub(crate) fn back(&self) -> Option<NonNull<G::EntryType>> {
         // SAFETY: The links of head are owned by the list, so it is safe to get a reference.
-        unsafe { &*G::get_links(self.head?).as_ref().entry.get() }.prev
+        unsafe { G::get_links_entry(self.head?).as_mut() }.prev
     }
 
     /// Returns a cursor starting on the first element of the list.
@@ -302,7 +308,7 @@ impl<G: GetLinks> CommonCursor<G> {
             Some(cur) => {
                 if let Some(head) = list.head {
                     // SAFETY: We have a shared ref to the linked list, so the links can't change.
-                    let links = unsafe { &*G::get_links(cur).as_ref().entry.get() };
+                    let links = unsafe { G::get_links_entry(cur).as_mut() };
                     if !ptr::addr_eq(links.next.unwrap().as_ptr(), head.as_ptr()) {
                         self.cur = links.next;
                     }
@@ -325,7 +331,7 @@ impl<G: GetLinks> CommonCursor<G> {
                     }
                 };
                 // SAFETY: There's a shared ref to the list, so the links can't change.
-                let links = unsafe { &*G::get_links(next).as_ref().entry.get() };
+                let links = unsafe { G::get_links_entry(next).as_mut() };
                 self.cur = links.prev;
             }
         }
