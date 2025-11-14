@@ -5,7 +5,7 @@ running 2 tests
 test linked_list::tests::test_push_back ... ok
 test raw_list::tests::test_push_back ... ok
 
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.50s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.48s
 
      Running tests/cursor_mut.rs (target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2)
 

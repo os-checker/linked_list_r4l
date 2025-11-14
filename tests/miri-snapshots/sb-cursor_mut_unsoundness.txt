@@ -9,9 +9,9 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; fini
 
 running 1 test
 test cursor_mut_unsoundness ... error: Undefined Behavior: Data race detected between (1) retag read on thread `cursor_mut_unso` and (2) retag write of type `Node` on thread `0` at alloc42356+0x10
-   --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:392:23
+   --> /home/gh-zjp-CN/bugs-found/fix/linked_list_r4l/src/raw_list.rs:398:23
     |
-392 |         Some(unsafe { &mut *cur.as_ptr() })
+398 |         Some(unsafe { &mut *cur.as_ptr() })
     |                       ^^^^^^^^^^^^^^^^^^ (2) just happened here
     |
 help: and (1) occurred earlier here
@@ -25,9 +25,9 @@ help: and (1) occurred earlier here
     = help: this indicates a bug in the program: it performed an invalid operation, and caused Undefined Behavior
     = help: see https://doc.rust-lang.org/nightly/reference/behavior-considered-undefined.html for further information
     = note: BACKTRACE (of the first span) on thread `0`:
-    = note: inside `linked_list_r4l::raw_list::CursorMut::<'_, std::sync::Arc<Node>>::current` at /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/raw_list.rs:392:23: 392:41
+    = note: inside `linked_list_r4l::raw_list::CursorMut::<'_, std::sync::Arc<Node>>::current` at /home/gh-zjp-CN/bugs-found/fix/linked_list_r4l/src/raw_list.rs:398:23: 398:41
 note: inside `linked_list_r4l::linked_list::CursorMut::<'_, std::sync::Arc<Node>>::current`
-   --> /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/src/linked_list.rs:268:9
+   --> /home/gh-zjp-CN/bugs-found/fix/linked_list_r4l/src/linked_list.rs:268:9
     |
 268 |         self.cursor.current()
     |         ^^^^^^^^^^^^^^^^^^^^^
@@ -44,5 +44,5 @@ error: aborting due to 1 previous error
 error: test failed, to rerun pass `--test cursor_mut`
 
 Caused by:
-  process didn't exit successfully: `/home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/bin/cargo-miri runner /home/gh-zjp-CN/bugs-found/repos/arceos-org/linked_list_r4l/target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2 cursor_mut_unsoundness` (exit status: 1)
+  process didn't exit successfully: `/home/gh-zjp-CN/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/bin/cargo-miri runner /home/gh-zjp-CN/bugs-found/fix/linked_list_r4l/target/miri/aarch64-unknown-linux-gnu/debug/deps/cursor_mut-7e012a9b2b1554c2 cursor_mut_unsoundness` (exit status: 1)
 note: test exited abnormally; to see the full output pass --no-capture to the harness.
