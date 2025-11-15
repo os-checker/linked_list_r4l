@@ -15,7 +15,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@nightly
       with:
         toolchain: ${{ matrix.rust-toolchain }}
-        components: rust-src, clippy, rustfmt
+        components: rust-src, clippy, rustfmt, miri
         targets: ${{ matrix.targets }}
     - name: Check rust version
       run: rustc --version --verbose
@@ -25,9 +25,12 @@ jobs:
       run: cargo clippy --target ${{ matrix.targets }} --all-features -- -A clippy::new_without_default
     - name: Build
       run: cargo build --target ${{ matrix.targets }} --all-features
-    - name: Unit test
+    - name: Miri
       if: ${{ matrix.targets == 'x86_64-unknown-linux-gnu' }}
-      run: cargo test --target ${{ matrix.targets }} -- --nocapture
+      # Ideally we should rely on the default stack borrows to check aliasing rules obligation,
+      # but for this crate to do that, we must refactor more APIs to take NonNull instread of `&`.
+      # Tree borrows allows more unsafe code today, but not promised in the future.
+      run: MIRIFLAGS=-Zmiri-tree-borrows cargo miri test
 
   doc:
     runs-on: ubuntu-latest
